@@ -1,0 +1,8 @@
+---
+- hosts: tomcat
+  sudo: True
+  vars_files:
+    - roles/common/vars/main.yml
+  roles:
+    - { role: selinux, when: "ansible_os_family == 'RedHat'" }
+    - common
