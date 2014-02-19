@@ -1,11 +1,5 @@
 ---
-# tasks file for tomcat
-
-- name: Create tomcat group
-  group: name=tomcat state=present
-
-- name: Create tomcat user
-  user: name=tomcat home={{ tomcat_user_home }} uid={{ tomcat_uid }} shell=/bin/sh group=tomcat state=present
+# Java tasks first
 
 # Full URLs can be found here https://ivan-site.com/2012/05/download-oracle-java-jre-jdk-using-a-script/
 - name: Download Java
@@ -66,6 +60,18 @@
   tags:
     - java
 
+# tasks file for tomcat
+
+- name: Create tomcat group
+  group: name=tomcat state=present
+  tags:
+    - tomcat
+
+- name: Create tomcat user
+  user: name=tomcat home={{ tomcat_user_home }} uid={{ tomcat_uid }} shell=/bin/sh group=tomcat state=present
+  tags:
+    - tomcat
+
 - name: Download tomcat
   shell: 'wget http://apache.mirrors.pair.com/tomcat/tomcat-{{ tomcat_version|first() }}/v{{ tomcat_version }}/bin/apache-tomcat-{{ tomcat_version }}.tar.gz
     -O /tmp/apache-tomcat-{{ tomcat_version }}.tar.gz creates=/tmp/apache-tomcat-{{ tomcat_version }}.tar.gz'
@@ -76,34 +82,50 @@
 - name: Extract tomcat
   shell: tar xzf /tmp/apache-tomcat-{{ tomcat_version }}.tar.gz -C /opt/
   when: tomcat_downloaded|changed == True
+  tags:
+    - tomcat
 
 - name: Create tomcat symlink
   file: path=/opt/tomcat state=link src=/opt/apache-tomcat-{{ tomcat_version }}
   when: tomcat_downloaded|changed == True
+  tags:
+    - tomcat
 
 - name: Delete temporary tomcat file
   file: path=/tmp/apache-tomcat-{{ tomcat_version }}.tar.gz state=absent
   ignore_errors: yes
+  tags:
+    - tomcat
 
 - name: Set tomcat file permissions
   file: path=/opt/apache-tomcat-{{ tomcat_version }} owner={{ tomcat_user }} recurse=yes
+  tags:
+    - tomcat
 
 - name: Configure Tomcat server
   template: src=server.xml dest={{ catalina_home }}/conf/
   notify: restart tomcat
+  tags:
+    - tomcat
 
 - name: Configure Tomcat users
   template: src=tomcat-users.xml dest={{ catalina_home }}/conf/
   notify: restart tomcat
+  tags:
+    - tomcat
 
 - name: Create tomcat init script
   template: src=tomcat.sh dest=/etc/init.d/tomcat owner=root group=root mode=0766
   when: ansible_os_family == 'RedHat'
+  tags:
+    - tomcat
 
 - name: deploy iptables rules
   template: src=iptables-save dest=/etc/sysconfig/iptables
   notify: restart iptables
   when: ansible_os_family == 'RedHat'
-
+  tags:
+    - tomcat
+    
 - name: wait for tomcat to start
   wait_for: port={{ http_port }}
