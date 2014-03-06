@@ -3,10 +3,11 @@
 
 # Install variables
 # Make sure your versions are compatible http://tomcat.apache.org/whichversion.html
-tomcat_version: '7.0.50' # 6.0.39 latest 6.x release
-java_version: '7u51'
-java_build: 'b13'
+tomcat_version: '6.0.39' #7.0.52 latest 7.X release, 6.0.39 latest 6.x release
+java_version: '6u45' #7u45 latest for 7.X, 6u45 latest for 6.X
+java_build: 'b06' #b18 latest for 7.X, b06 latest for 6.X
 jdk_or_jre: jre
+java_ext: bin #tar.gz for 7+, bin for <= 6. This is dumb
 openjdk: False # Set to true to use openjdk instead of oracle java
 http_port: 8080
 https_port: 8443

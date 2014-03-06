@@ -2,18 +2,32 @@
 # Java tasks first
 
 # Full URLs can be found here https://ivan-site.com/2012/05/download-oracle-java-jre-jdk-using-a-script/
-- name: Download Java
+- name: Download Java {{ java_version }}
   shell: 'wget --no-cookies --no-check-certificate --header "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com"
-    "http://download.oracle.com/otn-pub/java/jdk/{{ java_version }}-{{ java_build }}/{{ jdk_or_jre }}-{{ java_version }}-linux-x{{ ansible_userspace_bits }}.tar.gz"
-    -O /tmp/{{ jdk_or_jre }}_{{ java_version }}.tar.gz creates=/tmp/{{ jdk_or_jre }}_{{ java_version }}.tar.gz'
+    "http://download.oracle.com/otn-pub/java/jdk/{{ java_version }}-{{ java_build }}/{{ jdk_or_jre }}-{{ java_version }}-linux-x{{ ansible_userspace_bits }}.{{ java_ext }}"
+    -O /tmp/{{ jdk_or_jre }}_{{ java_version }}.{{ java_ext }} creates=/tmp/{{ jdk_or_jre }}_{{ java_version }}.{{ java_ext }}'
   register: jdk_downloaded
-  when: openjdk|bool
+  when: not openjdk|bool
   tags:
     - java
 
-- name: Extract java
-  shell: tar xzf /tmp/{{ jdk_or_jre }}_{{ java_version }}.tar.gz -C /opt/
-  when: jdk_downloaded|changed
+- name: Extract java 7
+  shell: tar xzf /tmp/{{ jdk_or_jre }}_{{ java_version }}.{{ java_ext }} -C /opt/
+  when: jdk_downloaded|changed and java_ext == "tar.gz"
+  tags:
+    - java
+
+- name: Make java 6 executable
+  file: path=/tmp/{{ jdk_or_jre }}_{{ java_version }}.{{ java_ext }}
+    mode=0755
+  when: jdk_downloaded|changed and java_ext == "bin"
+  tags:
+    - java
+
+- name: Extract java 6
+  shell: /tmp/{{ jdk_or_jre }}_{{ java_version }}.{{ java_ext }}
+    chdir=/opt creates=/opt/{{ jdk_or_jre }}1.{{ java_version|replace('u','.0_') }}/bin/java
+  when: jdk_downloaded|changed and java_ext == "bin"
   tags:
     - java
 
@@ -25,8 +39,9 @@
     - java
 
 - name: Delete temporary java files
-  file: path=/tmp/{{ jdk_or_jre }}_{{ java_version }}.tar.gz state=absent
+  file: path=/tmp/{{ jdk_or_jre }}_{{ java_version }}.{{ java_ext }} state=absent
   ignore_errors: yes
+  when: jdk_downloaded|changed
   tags:
     - java
 
@@ -69,6 +84,7 @@
 
 - name: Create tomcat user
   user: name=tomcat home={{ tomcat_user_home }} uid={{ tomcat_uid }} shell=/bin/sh group=tomcat state=present
+  ignore_errors: True
   tags:
     - tomcat
 
@@ -91,6 +107,12 @@
   tags:
     - tomcat
 
+- name: Create tomcat init script
+  template: src=tomcat.sh dest=/etc/init.d/tomcat owner=root group=root mode=0766
+  when: ansible_os_family == 'RedHat'
+  tags:
+    - tomcat
+
 - name: Delete temporary tomcat file
   file: path=/tmp/apache-tomcat-{{ tomcat_version }}.tar.gz state=absent
   ignore_errors: yes
@@ -103,7 +125,7 @@
     - tomcat
 
 - name: Configure Tomcat server
-  template: src=server.xml dest={{ catalina_home }}/conf/
+  template: src=server.xml.{{ tomcat_version|first() }} dest={{ catalina_home }}/conf/server.xml backup=yes
   notify: restart tomcat
   tags:
     - tomcat
@@ -111,12 +133,6 @@
 - name: Configure Tomcat users
   template: src=tomcat-users.xml dest={{ catalina_home }}/conf/
   notify: restart tomcat
-  tags:
-    - tomcat
-
-- name: Create tomcat init script
-  template: src=tomcat.sh dest=/etc/init.d/tomcat owner=root group=root mode=0766
-  when: ansible_os_family == 'RedHat'
   tags:
     - tomcat
 
