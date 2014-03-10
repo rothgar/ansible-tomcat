@@ -31,12 +31,21 @@
   tags:
     - java
 
+- name: Create temporary java answers file
+  copy: src=answers dest=/tmp/answers mode=0644
+  when: jdk_downloaded|changed and java_ext == "bin"
+  tags:
+    - java
+
 - name: Extract java 6
-  shell: /tmp/{{ jdk_or_jre }}_{{ java_version }}.{{ java_ext }}
+  shell: /tmp/{{ jdk_or_jre }}_{{ java_version }}.{{ java_ext }} < /tmp/answers &>/dev/null
     chdir=/opt creates=/opt/{{ jdk_or_jre }}1.{{ java_version|replace('u','.0_') }}/bin/java
   when: jdk_downloaded|changed and java_ext == "bin"
   tags:
     - java
+
+- name: Delete java answers file
+  file: path=/tmp/answers state=absent
 
 # Not necessary but sometimes nice to have
 - name: Create java symlink
@@ -97,12 +106,6 @@
   tags:
     - tomcat
 
-- name: Create tomcat user
-  user: name=tomcat home={{ tomcat_user_home }} uid={{ tomcat_uid }} shell=/bin/sh group=tomcat state=present
-  ignore_errors: True
-  tags:
-    - tomcat
-
 - name: Download tomcat
   shell: 'wget http://archive.apache.org/dist/tomcat/tomcat-{{ tomcat_version|first() }}/v{{ tomcat_version }}/bin/apache-tomcat-{{ tomcat_version }}.tar.gz
     -O /tmp/apache-tomcat-{{ tomcat_version }}.tar.gz creates=/tmp/apache-tomcat-{{ tomcat_version }}.tar.gz'
@@ -120,6 +123,12 @@
 - name: Create tomcat symlink
   file: path=/opt/tomcat state=link src=/opt/apache-tomcat-{{ tomcat_version }}
   when: tomcat_downloaded|changed == True
+  tags:
+    - tomcat
+
+- name: Create tomcat user
+  user: name=tomcat home={{ tomcat_user_home }} uid={{ tomcat_uid }} shell=/bin/sh group=tomcat state=present
+  ignore_errors: True
   tags:
     - tomcat
 
