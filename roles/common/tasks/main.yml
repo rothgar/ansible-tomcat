@@ -12,8 +12,15 @@
     - java
 
 - name: Extract java 7
-  shell: tar xzf /tmp/{{ jdk_or_jre }}_{{ java_version }}.{{ java_ext }} -C /opt/
+  shell: tar xzf /tmp/{{ jdk_or_jre }}_{{ java_version }}.{{ java_ext }}
+    chdir=/opt
   when: jdk_downloaded|changed and java_ext == "tar.gz"
+  tags:
+    - java
+
+- name: Update Java permissions
+  file: path=/opt/{{ jdk_or_jre }}1.{{ java_version|replace('u','.0_') }}
+    owner=root group=root recurse=yes mode=0755
   tags:
     - java
 
@@ -77,6 +84,14 @@
 
 # tasks file for tomcat
 
+- name: Stop tomcat just in case
+  shell: 'pkill -f tomcat'
+  ignore_errors: True
+  tags:
+    - tomcat
+  when: 
+- service: name=tomcat state=stopped
+
 - name: Create tomcat group
   group: name=tomcat state=present
   tags:
@@ -89,14 +104,15 @@
     - tomcat
 
 - name: Download tomcat
-  shell: 'wget http://apache.mirrors.pair.com/tomcat/tomcat-{{ tomcat_version|first() }}/v{{ tomcat_version }}/bin/apache-tomcat-{{ tomcat_version }}.tar.gz
+  shell: 'wget http://archive.apache.org/dist/tomcat/tomcat-{{ tomcat_version|first() }}/v{{ tomcat_version }}/bin/apache-tomcat-{{ tomcat_version }}.tar.gz
     -O /tmp/apache-tomcat-{{ tomcat_version }}.tar.gz creates=/tmp/apache-tomcat-{{ tomcat_version }}.tar.gz'
   register: tomcat_downloaded
   tags:
     - tomcat
 
 - name: Extract tomcat
-  shell: tar xzf /tmp/apache-tomcat-{{ tomcat_version }}.tar.gz -C /opt/
+  shell: tar xzf /tmp/apache-tomcat-{{ tomcat_version }}.tar.gz 
+    chdir=/opt
   when: tomcat_downloaded|changed == True
   tags:
     - tomcat
@@ -120,19 +136,18 @@
     - tomcat
 
 - name: Set tomcat file permissions
-  file: path=/opt/apache-tomcat-{{ tomcat_version }} owner={{ tomcat_user }} recurse=yes
+  file: path=/opt/apache-tomcat-{{ tomcat_version }} owner={{ tomcat_user }}
+    group=tomcat recurse=yes
   tags:
     - tomcat
 
 - name: Configure Tomcat server
   template: src=server.xml.{{ tomcat_version|first() }} dest={{ catalina_home }}/conf/server.xml backup=yes
-  notify: restart tomcat
   tags:
     - tomcat
 
 - name: Configure Tomcat users
   template: src=tomcat-users.xml dest={{ catalina_home }}/conf/
-  notify: restart tomcat
   tags:
     - tomcat
 
@@ -142,6 +157,13 @@
   when: ansible_os_family == 'RedHat'
   tags:
     - tomcat
+
+- name: Start tomcat service
+  shell: /etc/init.d/tomcat start
+  tags:
+    - tomcat
     
 - name: wait for tomcat to start
-  wait_for: port={{ http_port }}
+  wait_for: port={{ http_port }} timeout=60
+  tags:
+    - tomcat
