@@ -9,6 +9,16 @@ Requirements
 RHEL/CentOS
 Should work with Debian/Ubuntu but is untested
 
+Playbook Example
+----------------
+
+```
+- hosts: all
+  roles:
+      - role: rothgar.tomcat_and_java
+            openjdk: True
+```
+
 Role Variables
 --------------
 main.yml
