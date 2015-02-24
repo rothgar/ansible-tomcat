@@ -1,4 +1,8 @@
 ---
+- name: Install libselinux-python
+  yum: name=libselinux-python state=installed
+  when: ansible_os_family == "Redhat"
+
 # Java tasks first
 
 # Full URLs can be found here https://ivan-site.com/2012/05/download-oracle-java-jre-jdk-using-a-script/
