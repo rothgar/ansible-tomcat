@@ -2,7 +2,7 @@
 - hosts: tomcat
   sudo: True
   vars_files:
-    - roles/common/vars/main.yml
+    - vars/main.yml
   roles:
     - { role: selinux, when: "ansible_os_family == 'RedHat'" }
-    - common
+    - { rothgar.tomcat_and_java }
