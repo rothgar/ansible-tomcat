@@ -7,7 +7,7 @@
 
 # Full URLs can be found here https://ivan-site.com/2012/05/download-oracle-java-jre-jdk-using-a-script/
 - name: Download Java {{ java_version }}
-  shell: 'wget --no-cookies --no-check-certificate --header "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com"
+shell: 'wget -q --no-cookies --no-check-certificate --header "Cookie: oraclelicense=accept-securebackup-cookie"
     "http://download.oracle.com/otn-pub/java/jdk/{{ java_version }}-{{ java_build }}/{{ jdk_or_jre }}-{{ java_version }}-linux-x{{ ansible_userspace_bits }}.{{ java_ext }}"
     -O /tmp/{{ jdk_or_jre }}_{{ java_version }}.{{ java_ext }} creates=/tmp/{{ jdk_or_jre }}_{{ java_version }}.{{ java_ext }}'
   register: jdk_downloaded
