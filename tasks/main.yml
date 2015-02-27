@@ -164,13 +164,6 @@ shell: 'wget -q --no-cookies --no-check-certificate --header "Cookie: oraclelice
   tags:
     - tomcat
 
-- name: deploy iptables rules
-  template: src=iptables-save dest=/etc/sysconfig/iptables
-  notify: restart iptables
-  when: ansible_os_family == 'RedHat'
-  tags:
-    - tomcat
-
 - name: Start tomcat service
   shell: /etc/init.d/tomcat start
   tags:
